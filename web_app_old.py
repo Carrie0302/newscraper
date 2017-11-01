@@ -1,8 +1,8 @@
 import os
-import json
+
 from time import sleep
 
-from flask import Flask, flash, render_template, request, redirect, url_for
+from flask import Flask, flash, render_template, request,
 
 import webserver_get
 from wtforms import Form, TextField, validators
@@ -18,39 +18,10 @@ class ReusableForm(Form):
     name = TextField('https://www.', validators=[validators.required()])
 
 
-@app.route("/result", methods=['POST'])
-def result():
-    urlchecked = request.form['name']
-
-    if request.method == 'POST':
-        name = request.form['name']
-
-        name_clean = ''.join([
-            c
-            for c in '' + name.replace('https://', '').replace('http://', '')
-            .replace('www.', '') if c.isalpha()])
-
-        # def run_command():
-        #     return webserver_get.GetSite(name, name_clean=name_clean)
-
-        # value = 'fakevalue'
-
-        # print(
-        #     value,)
-
-        # if not os.path.exists(value):
-        #     try:
-        #         result = run_command()
-        #         sleep(.5)
-        value = 'static/{}.json'.format(name_clean)
-
-        file = json.load(open(value))
-        #     finally:
-        #         print("what")
-        # else:
-        #     pass
-
-    return render_template("index.html", urlentered=urlchecked, value=file)
+@app.route("/result", methods=['GET,POST'])
+def view_results():
+    print('fuckyi')
+    pass
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -91,9 +62,7 @@ def hello():
                     del form
             else:
                 pass
-            #return render_template('index.html', value=value)
-            return redirect(url_for('result', results_form=value))
-
+            return render_template('index.html', value=value)
             # Save the comment here.
 
         else:

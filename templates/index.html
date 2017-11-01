@@ -1,24 +1,469 @@
-<link rel="stylesheet" href="static/css/style.css" />
-<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css" /> -->
-<link rel="shortcut icon" href="static/favicon.ico" type="image/x-icon">
-<link rel="icon" href="static/favicon.ico" type="image/x-icon">
-<body>
+<!DOCTYPE html>
+<html lang="en">
 
-    <style>
-        img {
-            width:45%;
-        }
-    </style>
-    <img src='{{ value }}'  ></img>
-    
-        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
-        <ul>
-            {% for message in messages %}
-            <li>{{ message[1] }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %} {% endwith %}
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>News Bias Classifier</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom fonts for this template -->
+    <link href="static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat|Raleway|Roboto" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+
+    <!-- Plugin CSS -->
+    <link href="static/vendor/magnific-popup/magnific-popup.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="static/css/creative.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+  <script>
+    submit = function(){
+	  xsquare = $("#xsquare").val()
+	  x = $("#x").val()
+	  constant = $("#constant").val()
+	  
+	  equation = {xsquare : xsquare, x : x, constant : constant}
+	  
+	  $.post({
+	    url: "/solve",
+      contentType: "application/json",
+      data: JSON.stringify(equation),
+      success: function(result){
+        $(".hidden").css("display","inline").html("Roots are " + result.root_1 + " and " + result.root_2);
+      }
+	  });
+	}
+  </script>
+  <style>
+    .hidden {
+	  display: none;
+	}
+</style>
+<style>
+
+    .horizontal-bc-gen {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        /* width: 960px;
+        height: 500px; */
+        position: relative;
+    }
+    svg {
+        width: 100%;
+        height: 100%;
+        position: center;
+    }
+
+    path.slice{
+        stroke-width:2px;
+    }
+
+    text{
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    polyline{
+        opacity: .3;
+        stroke: black;
+        stroke-width: 2px;
+        fill: none;
+    }
+
+    .labelValue
+    {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 60%;
+        opacity: .5;
+
+    }
+
+    label {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-weight: normal;
+    }
+
+    .toolTip {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        position: absolute;
+        display: none;
+        width: auto;
+        height: auto;
+        background: none repeat scroll 0 0 white;
+        border: 0 none;
+        border-radius: 8px 8px 8px 8px;
+        box-shadow: -3px 3px 15px #888888;
+        color: black;
+        font: 12px sans-serif;
+        padding: 5px;
+        text-align: center;
+    }
+
+
+    .legend {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 60%;
+    }
+    rect {
+        stroke-width: 2;
+    }
+
+    text {
+        font: 10px sans-serif;
+    }
+
+
+    text.value{
+        font-size: 200%;
+        fill: white;
+    }
+
+    text.label{
+        font-size: 100%;
+    }
+
+    .axis text {
+        font: 10px sans-serif;
+    }
+
+    .axis path{
+        fill: none;
+        stroke: #000;
+    }
+
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .axis .tick line {
+        stroke-width: 1;
+        stroke: rgba(0, 0, 0, 0.2);
+    }
+
+    .axisHorizontal path{
+        fill: none;
+    }
+
+    .axisHorizontal line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .axisHorizontal .tick line {
+        stroke-width: 1;
+        stroke: rgba(0, 0, 0, 0.2);
+    }
+
+    .bar {
+        fill: steelblue;
+        fill-opacity: .9;
+    }
+
+    .x.axis path {
+        display: none;
+    }
+    section#analysis-bc-one{
+      padding-bottom: 0px;
+    }
+
+</style>
+
+  </head>
+
+  <body id="page-top">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+      <div class="container">
+        <a class="navbar-brand js-scroll-trigger" href="#page-top">Are You Fake News</a>
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link js-scroll-trigger" href="~/#checkurl">Check a URL</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link js-scroll-trigger" href="~/#services">How it Works</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link js-scroll-trigger" href="~/#portfolio">Why it's Important</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <header class="masthead">
+      <div class="header-content">
+        <div class="header-content-inner">
+          <h1 id="homeHeading">Check the Bias of a News Source</h1>
+          <hr>
+          <p>In an era of post-truth politics it's important to assess the validity of news sources. This search tool uses natural language processing and webscraping to pull 30 articles from a given website inorder to classify the bias of the website.</p>
+          <a class="btn btn-primary btn-xl js-scroll-trigger" href="#checkurl">Check a url!</a>
+        </div>
+      </div>
+    </header>
+
+    <section id="analysis-bc-one">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-12 text-center">
+            <h2 class="section-heading">Results</h2>
+            <hr class="primary">
+          </div>
+        </div>
+      </div>
+      <div class="container">
+             <h1>{{urlentered}}</h1>
+             <!-- <img id='image-results' src='{{ value }}'  ></img>  -->
+             <!--{{ value }} -->
+
+              <div class="horizontal-bc-gen">
+                <form>
+                    <label><input type="radio" name="dataset" id="dataset" value="total" checked> Total</label>
+                    <label><input type="radio" name="dataset" id="dataset" value="option1"> Option 1</label>
+                    <label><input type="radio" name="dataset" id="dataset" value="option2"> Option 2</label>
+                </form>
+              </div>
+              <div id="one-barchart"></div>
+                
+              <script>
+                  data1= [{"bias": 0.032, "center": 0.096, "conspiracy": 0.016, "extremeright": 0.026, "fakenews": 0.028, "hate": 0.015, "high": 0.077, "left": 0.057, "left-center": 0.089, "low": 0.012, "mixed": 0.037, "pro-science": 0.054, "propaganda": 0.029, "right": 0.013, "right-center": 0.025, "unreliable": 0.013, "veryhigh": 0.092}]
+                  
+                  datasetOption1 =[{"bias": 0.049, "center": 0.076, "conspiracy": 0.066, "extremeright": 0.066, "fakenews": 0.062, "hate": 0.065, "high": 0.057, "left": 0.067, "left-center": 0.076, "low": 0.062, "mixed": 0.07, "pro-science": 0.084, "propaganda": 0.059, "right": 0.063, "right-center": 0.075, "unreliable": 0.043, "veryhigh": 0.082}]
+
+                  datasetOption2 =[{"bias": 0.049, "center": 0.076, "conspiracy": 0.066, "extremeright": 0.066, "fakenews": 0.062, "hate": 0.065, "high": 0.057, "left": 0.067, "left-center": 0.076, "low": 0.062, "mixed": 0.07, "pro-science": 0.084, "propaganda": 0.059, "right": 0.063, "right-center": 0.075, "unreliable": 0.043, "veryhigh": 0.082}]
 
 
 
-</body>
+                  // data1 = [
+                  //     {label:"Category 1", value:19},
+                  //     {label:"Category 2", value:5},
+                  //     {label:"Category 3", value:13},
+                  //     {label:"Category 4", value:17},
+                  //     {label:"Category 5", value:21},
+                  //     {label:"Category 6", value:25}
+                  // ];
+
+                  // datasetOption1 = [
+                  //     {label:"Category 1", value:22},
+                  //     {label:"Category 2", value:33},
+                  //     {label:"Category 3", value:4},
+                  //     {label:"Category 4", value:15},
+                  //     {label:"Category 5", value:36},
+                  //     {label:"Category 6", value:0}
+                  // ];
+
+                  // datasetOption2 = [
+                  //     {label:"Category 1", value:10},
+                  //     {label:"Category 2", value:20},
+                  //     {label:"Category 3", value:30},
+                  //     {label:"Category 4", value:5},
+                  //     {label:"Category 5", value:12},
+                  //     {label:"Category 6", value:23}
+                  // ];
+
+
+                  var datasetTotal = []
+                  // function formatData(dataset) {
+
+                  //   for (var i = 0; i < dataset.length; i++) {
+
+                        
+                  //       datasetTotal.label = dataset[i].key
+                  //       console.log(dataset[i].key);
+                  //   }
+
+                  // }
+                  // formatData(data1);
+
+                  
+                  function rightorleft(dataset) {
+                    right_to_left = [ "extremeright", "right", "right-center", "left-center", "left"]
+                    var keys_memo = {};
+                    dataset.forEach(function (item) {
+
+                        for (var i in item) {
+                            
+                            if(right_to_left.indexOf(i) >= 0){
+                              console.log(i)
+                              keys_memo[i] = 1;
+                              datasetTotal.label = i
+                              datasetTotal.value = dataset[i]
+                            }
+
+                        }
+                    });
+                    var keys = Object.keys(keys_memo);
+                    //console.log(keys)
+                  }
+                  rightorleft(data1);
+                  console.log(datasetTotal)
+
+                  d3.selectAll("input").on("change", selectDataset);
+
+                  function selectDataset()
+                  {
+                      var value = this.value;
+                      if (value == "total")
+                      {
+                          change(datasetTotal);
+                      }
+                      else if (value == "option1")
+                      {
+                          change(datasetOption1);
+                      }
+                      else if (value == "option2")
+                      {
+                          change(datasetOption2);
+                      }
+                  }
+
+                  var margin = {top: (parseInt(d3.select('body').style('height'), 10)/20), right: (parseInt(d3.select('body').style('width'), 10)/20), bottom: (parseInt(d3.select('body').style('height'), 10)/20), left: (parseInt(d3.select('body').style('width'), 10)/5)},
+                          width = parseInt(d3.select('body').style('width'), 10) - margin.left - margin.right,
+                          height = parseInt(d3.select('body').style('height'), 10) - margin.top - margin.bottom;
+
+                  var div = d3.select("body").append("div").attr("class", "toolTip");
+
+                  var formatPercent = d3.format("");
+
+                  var y = d3.scale.ordinal()
+                          .rangeRoundBands([height, 0], .2, 0.5);
+
+                  var x = d3.scale.linear()
+                          .range([0, width]);
+
+                  var xAxis = d3.svg.axis()
+                          .scale(x)
+                          .tickSize(-height)
+                          .orient("bottom");
+
+                  var yAxis = d3.svg.axis()
+                          .scale(y)
+                          .orient("left");
+                  //.tickFormat(formatPercent);
+
+                  var svg = d3.select("body").append("svg")
+                          .attr("width", width + margin.left + margin.right)
+                          .attr("height", height + margin.top + margin.bottom)
+                          .append("g")
+                          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                  svg.append("g")
+                          .attr("class", "x axis")
+                          .attr("transform", "translate(0," + height + ")")
+                          .call(xAxis);
+
+                  d3.select("input[value=\"total\"]").property("checked", true);
+                  change(datasetTotal);
+
+                  function change(dataset) {
+
+                      y.domain(dataset.map(function(d) { return d.label; }));
+                      x.domain([0, d3.max(dataset, function(d) { return d.value; })]);
+
+                      svg.append("g")
+                              .attr("class", "x axis")
+                              .attr("transform", "translate(0," + height + ")")
+                              .call(xAxis);
+
+                      svg.select(".y.axis").remove();
+                      svg.select(".x.axis").remove();
+
+                      svg.append("g")
+                              .attr("class", "y axis")
+                              .call(yAxis)
+                              .append("text")
+                              .attr("transform", "rotate(0)")
+                              .attr("x", 50)
+                              .attr("dx", ".1em")
+                              .style("text-anchor", "end")
+                              .text("Option %");
+
+
+                      var bar = svg.selectAll(".bar")
+                              .data(dataset, function(d) { return d.label; });
+                      // new data:
+                      bar.enter().append("rect")
+                              .attr("class", "bar")
+                              .attr("x", function(d) { return x(d.value); })
+                              .attr("y", function(d) { return y(d.label); })
+                              .attr("width", function(d) { return width-x(d.value); })
+                              .attr("height", y.rangeBand());
+
+                      bar
+                              .on("mousemove", function(d){
+                                  div.style("left", d3.event.pageX+10+"px");
+                                  div.style("top", d3.event.pageY-25+"px");
+                                  div.style("display", "inline-block");
+                                  div.html((d.label)+"<br>"+(d.value)+"%");
+                              });
+                      bar
+                              .on("mouseout", function(d){
+                                  div.style("display", "none");
+                              });
+
+
+                      // removed data:
+                      bar.exit().remove();
+
+                      // updated data:
+                      bar.transition()
+                              .duration(750)
+                              .attr("x", function(d) { return 0; })
+                              .attr("y", function(d) { return y(d.label); })
+                              .attr("width", function(d) { return x(d.value); })
+                              .attr("height", y.rangeBand());
+
+                  };
+              </script>
+
+      </div>
+    </section>
+
+    <section class="p-0" id="portfolio">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-heading">Why it's Important</h2>
+            <hr class="light">
+			{% for equation in equations %}
+			<p>{{ equation.equation }}'s roots are {{ equation.root_1|float|round }} and {{ (equation.root_2)|float|round(1) }}</p>
+			{% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="static/vendor/jquery/jquery.min.js"></script>
+    <script src="static/vendor/popper/popper.min.js"></script>
+    <script src="static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- Plugin JavaScript -->
+    <script src="static/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="static/vendor/scrollreveal/scrollreveal.min.js"></script>
+    <script src="static/vendor/magnific-popup/jquery.magnific-popup.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="static/js/creative.min.js"></script>
+
+  </body>
+
+</html>
